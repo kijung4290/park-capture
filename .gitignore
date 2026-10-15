@@ -1,0 +1,12 @@
+bin/
+bin-preview/
+obj/
+dist/
+test-artifacts/
+tools/ffmpeg.exe
+tools/ffprobe.exe
+*.user
+*.private.xml
+*signing-key*
+*.pfx
+*.p12
