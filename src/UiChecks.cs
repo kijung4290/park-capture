@@ -11,7 +11,7 @@ using System.Windows.Forms;
 namespace ParkCapture
 {
     // In-process integration checks. No external window/input automation is used.
-    internal static class UiChecks
+    internal static partial class UiChecks
     {
         private static void Assert(bool value, string message) { if (!value) throw new Exception(message); }
         private static void Mouse(Control control, string method, Point point)
@@ -77,6 +77,10 @@ namespace ParkCapture
                 TestAnnotationDeletion(form, editor, buttons, root);
                 results.Add("PASS Seven annotation types: selection, delete button, Delete key, undo/redo and saved deletion");
                 results.Add("PASS Selection preserves undo/redo; Esc deselects; right-click deletes in drawing mode; compact delete controls fit");
+                TestAnnotationEditing(form, editor, buttons, root);
+                results.Add("PASS Text box drawing, multiline input, font/weight/color/background edits, Edit button, F2, double-click and cancel");
+                results.Add("PASS Click existing elements from drawing mode, edit all annotation styles/sizes/numbers, drag handles and reopen");
+                results.Add("PASS Compact text-box options fit without clipping or overlapping");
                 var footerLinks = Descendants(form).OfType<LinkLabel>().ToList();
                 Assert(footerLinks.Any(l => l.Text == "blog.naver.com/parkjuim90" && (string)l.Links[0].LinkData == Branding.BlogUrl), "Blog footer link missing");
                 Assert(footerLinks.Any(l => l.Text == Branding.Email && (string)l.Links[0].LinkData == "mailto:" + Branding.Email), "Email footer link missing");

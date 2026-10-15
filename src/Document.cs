@@ -10,7 +10,7 @@ using System.Xml.Serialization;
 
 namespace ParkCapture
 {
-    public enum Tool { Select, Crop, Number, Text, Bubble, Arrow, Rectangle, Ellipse, Mosaic, CutHorizontal, CutVertical, Resize }
+    public enum Tool { Select, Crop, Number, Text, Bubble, Arrow, Rectangle, Ellipse, Mosaic, CutHorizontal, CutVertical, Resize, TextBox }
     public class Mark
     {
         public Tool Kind;
@@ -19,6 +19,9 @@ namespace ParkCapture
         public float Width = 3, FontSize = 24;
         public int Number = 1;
         public string Text = "";
+        public string FontName = "Malgun Gothic";
+        public bool Bold = true, BoxBorder = true, BoxFill = true;
+        public bool HasText { get { return Kind == Tool.Text || Kind == Tool.TextBox || Kind == Tool.Bubble || Kind == Tool.Number; } }
         public Mark Clone() { return (Mark)MemberwiseClone(); }
         public RectangleF Bounds
         {
@@ -27,10 +30,11 @@ namespace ParkCapture
                 if (Kind == Tool.Number) return new RectangleF(X1 - FontSize * .75f, Y1 - FontSize * .75f, FontSize * 1.5f, FontSize * 1.5f);
                 if (Kind == Tool.Text)
                 {
-                    using (var bmp = new Bitmap(1, 1)) using (var g = Graphics.FromImage(bmp)) using (var f = new Font("Malgun Gothic", FontSize, FontStyle.Bold, GraphicsUnit.Pixel))
+                    using (var bmp = new Bitmap(1, 1)) using (var g = Graphics.FromImage(bmp)) using (var f = AnnotationFonts.Create(FontName, FontSize, Bold))
                     { var size = g.MeasureString(Text, f); return new RectangleF(X1, Y1, size.Width, size.Height); }
                 }
                 if (Kind == Tool.Bubble) return new RectangleF(Math.Min(X1, X2), Math.Min(Y1, Y2), Math.Max(100, Math.Abs(X2 - X1)), Math.Max(50, Math.Abs(Y2 - Y1)) + 18);
+                if (Kind == Tool.TextBox) return new RectangleF(Math.Min(X1, X2), Math.Min(Y1, Y2), Math.Max(60, Math.Abs(X2 - X1)), Math.Max(36, Math.Abs(Y2 - Y1)));
                 return RectangleF.FromLTRB(Math.Min(X1, X2), Math.Min(Y1, Y2), Math.Max(X1, X2), Math.Max(Y1, Y2));
             }
         }
@@ -166,7 +170,7 @@ namespace ParkCapture
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
             Color color = Color.FromArgb(m.Argb); var r = m.Bounds;
-            using (var pen = new Pen(color, Math.Max(1, m.Width))) using (var brush = new SolidBrush(color)) using (var font = new Font("Malgun Gothic", Math.Max(8, m.FontSize), FontStyle.Bold, GraphicsUnit.Pixel))
+            using (var pen = new Pen(color, Math.Max(1, m.Width))) using (var brush = new SolidBrush(color)) using (var font = AnnotationFonts.Create(m.FontName, m.FontSize, m.Bold))
             {
                 pen.LineJoin = LineJoin.Round;
                 switch (m.Kind)
@@ -176,6 +180,12 @@ namespace ParkCapture
                     case Tool.Rectangle: if (r.Width > 0 && r.Height > 0) g.DrawRectangle(pen, r.X, r.Y, r.Width, r.Height); break;
                     case Tool.Ellipse: if (r.Width > 0 && r.Height > 0) g.DrawEllipse(pen, r); break;
                     case Tool.Text: g.DrawString(m.Text, font, brush, m.X1, m.Y1); break;
+                    case Tool.TextBox:
+                        if (m.BoxFill) g.FillRectangle(Brushes.White, r);
+                        if (m.BoxBorder) g.DrawRectangle(pen, r.X, r.Y, r.Width, r.Height);
+                        var textBox = r; textBox.Inflate(-8, -6);
+                        using (var format = new StringFormat { Trimming = StringTrimming.EllipsisCharacter }) g.DrawString(m.Text, font, brush, textBox, format);
+                        break;
                     case Tool.Number:
                         g.FillEllipse(brush, r); using (var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center }) g.DrawString(m.Number.ToString(), font, Brushes.White, r, format); break;
                     case Tool.Bubble:

@@ -28,6 +28,7 @@ namespace ParkCapture
             try
             {
                 UpdateTests.Run(Test, root);
+                AnnotationTests.Run(Test, root);
                 Test("Buttons: enlarged text, icon spacing, complete labels and repaint regression", delegate { ButtonRenderingChecks.Run(root); });
                 Test("Image resize: pixels, editable marks, undo/redo, saved dimensions and original preservation", delegate
                 {

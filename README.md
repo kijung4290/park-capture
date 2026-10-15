@@ -1,4 +1,4 @@
-# 박주임 캡처 · 0.4.0
+# 박주임 캡처 · 0.5.0
 
 Windows에서 영역·창을 캡처하고 설명을 붙이는 개인용 데스크톱 프로그램입니다. [oh-my-opensnap for Windows의 README](https://github.com/Canine89/oh-my-opensnap-win)에 공개된 기능 설명을 참고하여 독립적으로 구현했습니다. 원본 프로그램의 소스 코드·로고·브랜드를 가져오지 않았습니다.
 
@@ -11,6 +11,8 @@ Windows에서 영역·창을 캡처하고 설명을 붙이는 개인용 데스�
 0.3에서는 이미지 프레임 크기 조절, 캐릭터 로고, 하단 블로그·이메일 링크, 알기 쉬운 숫자 단축키 표기, 영역 선택 후 이미지·영상 선택 팝업을 추가했습니다.
 
 0.4에서는 GitHub Releases를 통한 새 버전 자동 확인과 앱 내 업데이트를 지원합니다. [최신 버전 다운로드](https://github.com/kijung4290/park-capture/releases/latest) · [소스 저장소](https://github.com/kijung4290/park-capture).
+
+0.5에서는 여러 줄 텍스트 상자, 앱에 포함된 프리텐다드와 설치된 글꼴 선택, 내용 수정 버튼·F2 편집, 기존 요소를 바로 클릭해 수정하는 기능을 추가했습니다. 선택한 요소의 8개 손잡이 또는 가로·세로 입력으로 크기를 바꿀 수 있습니다.
 
 ## 바로 실행하기
 
@@ -51,18 +53,31 @@ Windows에서 영역·창을 캡처하고 설명을 붙이는 개인용 데스�
 
 | 도구 | 단축키 | 사용법 |
 | --- | --- | --- |
-| 선택 | V | 요소를 클릭해 선택 → 요소 삭제 또는 Delete. 드래그로 이동, 오른쪽 아래 손잡이로 도형 크기 조절 |
+| 선택 | V | 요소 클릭 → 크기·색상·내용 수정. 드래그로 이동, 8개 손잡이로 크기 조절, Delete로 삭제 |
 | 자르기 | C | 영역을 드래그 → Enter 또는 자르기 적용. 영역 선택 후 적용 버튼 활성화 |
 | 크기 조절 | S | 이미지의 모서리·테두리 드래그, 또는 가로·세로 픽셀 입력 → 크기 적용 |
 | 번호 | N | 클릭마다 1, 2, 3… |
 | 글자 | T | 클릭 → 내용 입력 |
+| 텍스트 상자 | X | 영역 드래그 → 여러 줄 입력. 상자 폭에 맞춰 줄바꿈, 테두리·흰 배경 선택 |
 | 말풍선 | B | 드래그 → 내용 입력 |
 | 화살표 | A | 드래그. Shift를 누르면 45도 단위로 고정 |
 | 사각형 / 원 | R / O | 드래그. Shift를 누르면 정사각형 / 정원 |
 | 가리기 | M | 가릴 영역을 드래그. 강도 값으로 모자이크 블록 크기 조절 |
 | 가로 / 세로 띠 삭제 | 더 보기 메뉴 | 없앨 영역을 드래그 → Enter |
 
-도구 단축키는 캔버스에 포커스가 있을 때 작동합니다. 선택한 주석의 색상·굵기·글자 크기를 바꿀 수 있고, 글자·말풍선은 선택 도구에서 더블클릭하여 내용을 수정할 수 있습니다.
+도구 단축키는 캔버스에 포커스가 있을 때 작동합니다. 그리기 도구를 사용 중이어도 기존 요소를 클릭하면 선택되어 편집 옵션이 나타납니다. 기존 요소 위에 새 요소를 겹쳐 그리려면 **Alt**를 누른 채 클릭·드래그하세요. 자르기·띠 삭제·이미지 크기 조절 도구는 각 영역 작업을 우선합니다.
+
+### 글자·텍스트 상자·다른 요소 다시 편집하기
+
+- **글자 / 텍스트 상자 / 말풍선**: 요소를 클릭하고 **내용 수정**, **F2**, **Enter** 또는 더블클릭으로 다시 입력합니다. 입력 창에서 여러 줄을 작성할 수 있으며 **Ctrl+Enter**로 저장하고 **Esc**로 취소합니다.
+- **글꼴**: 프리텐다드, 맑은 고딕(기본), PC에 설치된 글꼴 중에서 고릅니다. **굵게**와 **글자 크기(8~512px)**도 선택할 수 있습니다. 프리텐다드 Regular·Bold는 앱에 포함되어 별도로 설치할 필요가 없습니다. 이전 프로젝트의 글자는 기존 맑은 고딕 설정을 유지합니다.
+- **텍스트 상자**: 드래그한 영역 안에서 글을 줄바꿈합니다. **테두리 / 흰 배경**을 켜거나 끌 수 있고, 상자를 늘려도 글자 크기는 유지됩니다. 내용이 상자보다 길면 말줄임으로 표시되므로 상자를 늘리거나 글자 크기를 줄이세요.
+- **번호**: 글꼴·굵게·색상·크기와 함께 번호 값도 수정할 수 있습니다.
+- **화살표·도형·말풍선·텍스트 상자**: 색상·굵기, 가로·세로 크기를 수정할 수 있습니다. 가로·세로는 입력 후 **크기 적용**을 누르세요. 말풍선의 세로 값은 꼬리를 포함합니다.
+- **8개 손잡이**: 선택한 요소의 모서리·변 손잡이를 끌어 크기를 조절합니다. 글자와 번호는 글자 크기가 함께 바뀌며, 텍스트 상자는 줄바꿈 영역이 바뀝니다. **Shift**를 누르면 도형 비율을 유지합니다.
+- **가리기**: 모자이크 영역 크기와 강도를 수정합니다.
+
+편집한 내용·글꼴·색상·크기는 프로젝트에 저장되며, **Ctrl+Z / Ctrl+Y**로 되돌리거나 다시 적용할 수 있습니다. 자르기·띠 삭제를 적용하면 그 이전 요소들은 이미지에 합쳐집니다. 요소를 따로 편집하려면 먼저 자르기를 마친 뒤 설명을 넣으세요.
 
 ### 이미지 프레임 크기 조절
 
@@ -168,9 +183,10 @@ CI에서는 대화형 디스플레이가 필요한 실제 화면 캡처 검증�
 | `src\Capture.cs` | 정지 화면·영역·창 선택·확대경 |
 | `src\Document.cs` | 주석 모델·픽셀 렌더링·실행 취소·저장·내보내기 |
 | `src\ImageResize.cs`, `src\Editor.Resize.cs` | 이미지 리샘플링·프레임 드래그·비율·실행 취소 |
-| `src\Editor.cs` | 캔버스 조작과 도구 |
+| `src\Editor.cs`, `src\Editor.Selection.cs`, `src\MarkGeometry.cs` | 캔버스 조작·직접 선택·내용 수정·요소 크기 조절 |
 | `src\MainForm.cs` | 보관함·메뉴·단축키·설정 창 |
 | `src\MainForm.Design.cs` | 화면 배치·도구별 옵션·검색·시작 화면 |
+| `src\MainForm.Annotations.cs`, `src\AnnotationFonts.cs` | 요소 속성 편집과 내장·설치 글꼴 선택 |
 | `src\MainForm.ImageSize.cs` | 크기 입력·비율 유지·블로그·이메일 하단 영역 |
 | `src\CaptureModeDialog.cs` | 영역 선택 후 이미지·영상 선택 팝업 |
 | `src\ShortcutKeys.cs`, `src\Branding.cs` | 단축키 이름·로고 리소스·연락처 |
@@ -180,8 +196,8 @@ CI에서는 대화형 디스플레이가 필요한 실제 화면 캡처 검증�
 | `src\Updates.cs`, `src\MainForm.Updates.cs` | GitHub 버전 확인·다운로드·안내·재시작 |
 | `src\UpdatePackage.cs`, `src\UpdateInstaller.cs`, `updater\Program.cs` | 서명·해시·ZIP 검증, 교체와 실패 복구 |
 | `sign-release.ps1`, `publish-release.ps1`, `.github/workflows/release.yml` | 업데이트 서명·릴리스 자동 배포 |
-| `src\SelfTests.cs`, `src\UpdateTests.cs` | 핵심·버튼·업데이트 검증 19개 |
-| `src\UiChecks.cs` | 실제 컨트롤 이벤트·검색·크기 조절·요소 삭제·설정·업데이트 안내·캡처 팝업·녹화 통합 검증 14개 |
+| `src\SelfTests.cs`, `src\UpdateTests.cs`, `src\AnnotationTests.cs` | 핵심·버튼·업데이트·글꼴·편집 데이터 검증 22개 |
+| `src\UiChecks.cs`, `src\UiChecks.Annotations.cs` | 실제 편집·글꼴·크기·내용 수정·선택·캡처·녹화 통합 검증 17개 |
 | `assets\parkjuim-logo.png`, `assets\parkcapture.ico` | 제공된 캐릭터 이미지를 참고해 만든 로고·실행 파일 아이콘 |
 
 `--preview`는 임시 데모 폴더와 데모 이미지를 사용합니다. 검증 중 앱이 잠깐 화면에 표시되며, 앱 내부 이벤트를 통해 주석·크롭·캡처·짧은 화면 녹화까지 확인합니다. FFmpeg가 없으면 영상 관련 검증은 건너뜁니다. 배율이 혼합된 다중 모니터 등 미검증 항목은 위의 한계를 참고하세요.
@@ -191,3 +207,103 @@ CI에서는 대화형 디스플레이가 필요한 실제 화면 캡처 검증�
 구현에 참고한 공식 문서: [화면 픽셀 복사](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.graphics.copyfromscreen), [전역 단축키](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey), [FFmpeg gdigrab](https://ffmpeg.org/ffmpeg-devices.html#gdigrab). FFmpeg를 별도로 재배포할 경우에는 해당 빌드의 라이선스와 배포 조건을 확인해야 합니다.
 
 제작자: 박주임 · [블로그](https://blog.naver.com/parkjuim90) · parkjuim90@naver.com. 앱 하단의 블로그 주소는 브라우저를 열고 이메일 주소는 기본 메일 작성 창을 엽니다. 이메일은 자동으로 발송하지 않습니다.
+
+
+## Pretendard font license
+
+Bundled unmodified Pretendard 1.3.9 Regular and Bold by Kil Hyung-jin. Project: https://github.com/orioncactus/pretendard
+
+Copyright (c) 2021, Kil Hyung-jin (https://github.com/orioncactus/pretendard),
+with Reserved Font Name Pretendard.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.

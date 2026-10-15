@@ -302,11 +302,12 @@ namespace ParkCapture
                 if (key == Keys.Escape && editor.ClearMarkSelection()) return true;
                 if (key == Keys.Enter && editor.Tool == Tool.Resize) { ApplyEditorAction(); return true; }
                 if (key == Keys.Enter && editor.ApplySelection()) return true;
+                if ((key == Keys.F2 || key == Keys.Enter) && editor.EditSelectedText()) return true;
                 if (keyData == Keys.Delete || keyData == Keys.Back) { editor.DeleteSelected(); return true; }
                 if (editor.MoveSelection(key, (keyData & Keys.Shift) != 0 ? 10 : 1)) return true;
                 if ((keyData & (Keys.Control | Keys.Alt)) == 0)
                 {
-                    var map = new Dictionary<Keys, Tool> { { Keys.V, Tool.Select }, { Keys.C, Tool.Crop }, { Keys.S, Tool.Resize }, { Keys.N, Tool.Number }, { Keys.T, Tool.Text }, { Keys.B, Tool.Bubble }, { Keys.A, Tool.Arrow }, { Keys.R, Tool.Rectangle }, { Keys.O, Tool.Ellipse }, { Keys.M, Tool.Mosaic } };
+                    var map = new Dictionary<Keys, Tool> { { Keys.V, Tool.Select }, { Keys.C, Tool.Crop }, { Keys.S, Tool.Resize }, { Keys.N, Tool.Number }, { Keys.T, Tool.Text }, { Keys.X, Tool.TextBox }, { Keys.B, Tool.Bubble }, { Keys.A, Tool.Arrow }, { Keys.R, Tool.Rectangle }, { Keys.O, Tool.Ellipse }, { Keys.M, Tool.Mosaic } };
                     if (map.ContainsKey(key)) { ChooseTool(map[key]); return true; }
                 }
             }

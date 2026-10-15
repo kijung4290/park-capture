@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -70,7 +70,7 @@ namespace ParkCapture
             var split = new SplitContainer { Size = new Size(1300, 700), Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel1, SplitterDistance = 266, Panel1MinSize = 250, SplitterWidth = 1, IsSplitterFixed = true, Margin = Padding.Empty, BackColor = Style.Line };
             root.Controls.Add(split, 0, 1); split.Panel1.BackColor = Style.Sidebar; split.Panel2.BackColor = Style.Paper;
             BuildSidebar(split.Panel1);
-            var workspace = Grid(4); workspace.RowStyles.Add(new RowStyle(SizeType.Absolute, 74)); workspace.RowStyles.Add(new RowStyle(SizeType.Absolute, 46)); workspace.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); workspace.RowStyles.Add(new RowStyle(SizeType.Absolute, 46)); split.Panel2.Controls.Add(workspace);
+            var workspace = Grid(4); workspace.RowStyles.Add(new RowStyle(SizeType.Absolute, 74)); workspace.RowStyles.Add(new RowStyle(SizeType.Absolute, 94)); workspace.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); workspace.RowStyles.Add(new RowStyle(SizeType.Absolute, 46)); split.Panel2.Controls.Add(workspace);
             var toolSurface = new Surface { Dock = DockStyle.Fill, BackColor = Color.White, BottomLine = true, Margin = Padding.Empty };
             var tools = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(14, 5, 10, 4), Margin = Padding.Empty, WrapContents = true };
             bool sizingTools = false;
@@ -90,13 +90,14 @@ namespace ParkCapture
             Separator(tools);
             AddTool(tools, Tool.Number, "번호", "Number", "number", "N", "클릭할 때마다 순서대로 번호를 붙입니다.", "Click to add sequential numbered markers.");
             AddTool(tools, Tool.Text, "글자", "Text", "text", "T", "이미지 위에 글자를 넣습니다.", "Add text to your image.");
+            AddTool(tools, Tool.TextBox, "텍스트 상자", "Text box", "textBox", "X", "영역을 드래그하고 여러 줄의 글을 입력합니다.", "Drag a text box and enter multiple lines.");
             AddTool(tools, Tool.Arrow, "화살표", "Arrow", "arrow", "A", "드래그해서 가리킬 곳을 표시합니다.", "Drag an arrow to point something out.");
             AddTool(tools, Tool.Bubble, "말풍선", "Callout", "bubble", "B", "설명을 담은 말풍선을 그립니다.", "Draw a callout with a short explanation.");
             Separator(tools);
             AddTool(tools, Tool.Rectangle, "사각형", "Box", "rectangle", "R", "드래그해서 사각형을 그립니다.", "Drag to draw a rectangle.");
             AddTool(tools, Tool.Ellipse, "원", "Ellipse", "ellipse", "O", "드래그해서 원을 그립니다.", "Drag to draw an ellipse.");
             AddTool(tools, Tool.Mosaic, "가리기", "Mosaic", "mosaic", "M", "개인정보 등 가릴 부분을 모자이크 처리합니다.", "Pixelate the region you want to hide.");
-            moreTools = ActionButton(Words.T("더 보기", "More"), "more", delegate { }, ButtonTone.Tool); moreTools.Font = Style.Font(8.5f); moreTools.MinimumSize = new Size(60, 60); moreTools.Margin = new Padding(2, 0, 2, 0);
+            moreTools = ActionButton(Words.T("더 보기", "More"), "more", delegate { }, ButtonTone.Tool); moreTools.Font = Style.Font(8.5f); moreTools.MinimumSize = new Size(60, 60); moreTools.Margin = new Padding(0, 0, 0, 0);
             var extraMenu = new ContextMenuStrip();
             foreach (var band in new[] { Tool.CutHorizontal, Tool.CutVertical })
             {
@@ -187,14 +188,15 @@ namespace ParkCapture
             strokeInput = new NumericUpDown { Minimum = 1, Maximum = 20, Value = 3, Width = 44, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(0, 3, 0, 0), AccessibleName = Words.T("선 굵기 또는 모자이크 강도", "Line width or mosaic strength") };
             strokeInput.ValueChanged += delegate { if (!updatingStyle) { editor.LineWidth = (float)strokeInput.Value; editor.ApplyStyle(); } };
             fontLabel = new Label { Text = Words.T("크기", "Size"), AutoSize = true, Margin = new Padding(10, 7, 5, 0), ForeColor = Style.Muted, Font = Style.Font(8.5f) };
-            fontInput = new NumericUpDown { Minimum = 10, Maximum = 160, Value = 24, Width = 48, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(0, 3, 0, 0), AccessibleName = Words.T("글자 크기", "Text size") };
+            fontInput = new NumericUpDown { Minimum = 8, Maximum = 512, Value = 24, Width = 48, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(0, 3, 0, 0), AccessibleName = Words.T("글자 크기", "Text size") };
             fontInput.ValueChanged += delegate { if (!updatingStyle) { editor.TextSize = (float)fontInput.Value; editor.ApplyStyle(); } };
             styleOptions.Controls.AddRange(new Control[] { widthLabel, strokeInput, fontLabel, fontInput }); layout.Controls.Add(styleOptions, 2, 0);
             applyButton = ActionButton(Words.T("자르기 적용", "Apply crop"), "check", delegate { ApplyEditorAction(); }, ButtonTone.Primary); applyButton.MinimumSize = new Size(80, 32); applyButton.Margin = new Padding(8, 2, 0, 0); layout.Controls.Add(applyButton, 3, 0);
             deleteMarkButton = ActionButton(Words.T("요소 삭제", "Delete element"), "trash", delegate { editor.DeleteSelected(); });
             deleteMarkButton.Margin = new Padding(12, 2, 0, 0); layout.Controls.Add(deleteMarkButton, 4, 0);
             tips.SetToolTip(deleteMarkButton, Words.T("선택한 요소만 삭제 · Delete · Ctrl+Z로 복구", "Delete the selected element · Delete · Ctrl+Z to restore"));
-            surface.Controls.Add(layout); return surface;
+            var rows = Grid(2); rows.RowStyles.Add(new RowStyle(SizeType.Absolute, 44)); rows.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            rows.Controls.Add(layout, 0, 0); rows.Controls.Add(BuildAnnotationOptions(), 0, 1); surface.Controls.Add(rows); return surface;
         }
         private Control BuildFooter()
         {
@@ -217,7 +219,7 @@ namespace ParkCapture
         }
         private void AddTool(FlowLayoutPanel panel, Tool tool, string ko, string en, string glyph, string shortcut, string koHint, string enHint)
         {
-            var button = ActionButton(Words.T(ko, en), glyph, delegate { ChooseTool(tool); }, ButtonTone.Tool); button.Font = Style.Font(8.5f); button.MinimumSize = new Size(60, 60); button.Margin = new Padding(2, 0, 2, 0);
+            var button = ActionButton(Words.T(ko, en), glyph, delegate { ChooseTool(tool); }, ButtonTone.Tool); button.Font = Style.Font(8.5f); button.MinimumSize = new Size(60, 60); button.Margin = new Padding(0, 0, 0, 0);
             tips.SetToolTip(button, Words.T(koHint, enHint) + "\n" + Words.T("단축키: ", "Shortcut: ") + shortcut); toolButtons.Add(tool, button); panel.Controls.Add(button);
         }
         private static void Separator(FlowLayoutPanel panel)
@@ -249,6 +251,7 @@ namespace ParkCapture
             {
                 if (!hasVideo) title.Text = Words.T("캡처를 시작해 보세요", "Ready when you are");
                 styleOptions.Visible = false; imageSizeOptions.Visible = false; applyButton.Visible = false; deleteMarkButton.Visible = false; sizeInputDocument = null;
+                UpdateAnnotationOptions(null, Tool.Select, false);
                 detail.Text = hasVideo ? Words.T("MP4 · 원본 해상도", "MP4 · Original resolution") : Words.T("화면을 담고, 필요한 설명만 더하세요.", "Capture a screen, then make it clear.");
                 toolHint.Text = hasVideo ? Words.T("영상을 재생하거나 필요한 구간만 내보낼 수 있어요.", "Play your recording or export a shorter clip.") : Words.T("이미지를 선택하면 편집 도구를 사용할 수 있어요.", "Select an image to start editing.");
                 SetStatus(hasVideo ? Words.T("원본 영상은 그대로 보관됩니다.", "Your original recording is preserved.") : HotkeyText(settings) + Words.T("  ·  언제든 새 캡처", "  ·  Capture from any app")); editor.Invalidate(); return;
@@ -264,7 +267,7 @@ namespace ParkCapture
             styleOptions.Visible = styling; applyButton.Visible = area || resizing;
             applyButton.Enabled = resizing ? !editor.IsFrameResizing && (imageWidthInput.Value != doc.Image.Width || imageHeightInput.Value != doc.Image.Height) : editor.HasAreaSelection;
             applyButton.Text = resizing ? Words.T("크기 적용", "Apply size") : current == Tool.Crop ? Words.T("자르기 적용", "Apply crop") : Words.T("선택한 띠 삭제", "Remove band");
-            bool text = styled == Tool.Text || styled == Tool.Number || styled == Tool.Bubble;
+            bool text = styled == Tool.Text || styled == Tool.TextBox || styled == Tool.Number || styled == Tool.Bubble;
             fontLabel.Visible = fontInput.Visible = text;
             widthLabel.Visible = strokeInput.Visible = styled != Tool.Text && styled != Tool.Number;
             widthLabel.Text = styled == Tool.Mosaic ? Words.T("강도", "Block") : Words.T("굵기", "Stroke");
@@ -277,22 +280,24 @@ namespace ParkCapture
                 updatingStyle = false;
             }
             toolHint.Text = ToolInstruction(current, selected != null);
+            UpdateAnnotationOptions(selected, styled, true);
             if (editor.IsFrameResizing) toolHint.Text = editor.ResizePreviewSize.Width + " × " + editor.ResizePreviewSize.Height + Words.T(" px · 놓으면 적용, Esc 취소", " px · Release to apply, Esc cancels");
             detail.Text = doc.Dirty ? Words.T("변경 내용 저장 중…", "Saving changes…") : Words.T("자동 저장됨 · 원본 보관", "Saved automatically · Original preserved");
             SetStatus(doc.Image.Width + " × " + doc.Image.Height + Words.T(" px   ·   휠로 확대 · 가운데 버튼으로 이동", " px   ·   Scroll to zoom · Middle-drag to pan"));
         }
         private static string ToolInstruction(Tool tool, bool selected)
         {
-            if (selected) return Words.T("요소 선택됨 · Delete 삭제 · Esc 선택 해제", "Element selected · Delete removes · Esc deselects");
+            if (selected) return Words.T("선택됨 · 드래그 이동 · 손잡이로 크기 조절", "Selected · Drag to move · Resize with handles");
             switch (tool)
             {
-                case Tool.Select: return Words.T("요소 클릭 → 요소 삭제 · 우클릭으로도 삭제할 수 있어요.", "Click an element, then Delete element · Or right-click it.");
+                case Tool.Select: return Words.T("요소를 클릭해 크기·색상·내용을 수정하세요.", "Click an element to edit its size, color or content.");
                 case Tool.Resize: return Words.T("프레임을 끌거나 픽셀을 입력하세요. Alt: 자유 비율", "Drag the frame or enter pixels. Alt: free aspect ratio");
                 case Tool.Crop: return Words.T("남길 영역을 드래그한 뒤 적용 또는 Enter를 누르세요.", "Drag the area to keep, then Apply or Enter.");
                 case Tool.CutHorizontal: return Words.T("없앨 가로 띠를 드래그한 뒤 Enter를 누르세요.", "Drag the horizontal band to remove, then Enter.");
                 case Tool.CutVertical: return Words.T("없앨 세로 띠를 드래그한 뒤 Enter를 누르세요.", "Drag the vertical band to remove, then Enter.");
                 case Tool.Number: return Words.T("클릭하면 1, 2, 3 순서대로 번호가 생겨요.", "Click to place markers numbered 1, 2, 3…");
                 case Tool.Text: return Words.T("글자를 넣을 곳을 클릭하세요.", "Click where you want to add text.");
+                case Tool.TextBox: return Words.T("상자를 드래그하고 글을 입력하세요. 기존 요소는 클릭해 수정", "Drag a text box, then enter text. Click existing elements to edit.");
                 case Tool.Mosaic: return Words.T("가릴 부분을 드래그하세요. 강도로 모자이크 크기를 조절해요.", "Drag over the area to hide. Block controls pixel size.");
                 case Tool.Bubble: return Words.T("말풍선을 드래그한 뒤 내용을 입력하세요.", "Drag a callout, then enter its text.");
                 default: return Words.T("드래그해서 그리세요. Shift를 누르면 모양이 고정돼요.", "Drag to draw. Hold Shift to constrain the shape.");
@@ -312,7 +317,7 @@ namespace ParkCapture
         }
         private void ShowShortcuts()
         {
-            MessageBox.Show(this, HotkeyText(settings) + Words.T("  새 캡처\n\nV 선택   C 자르기   S 크기 조절\nN 번호   T 글자\nA 화살표   B 말풍선   R 사각형   O 원   M 가리기\n\nCtrl+C 이미지 복사   Ctrl+V 이미지 가져오기\nCtrl+Z 실행 취소   Ctrl+Y 다시 실행\nCtrl+0 화면 맞춤   Enter 자르기 적용\nDelete / Backspace 선택 요소 삭제   Esc 선택 해제\n\n마우스 휠: 확대·축소\n가운데 버튼 드래그: 화면 이동", "  New capture\n\nV Select   C Crop   S Resize\nN Number   T Text\nA Arrow   B Callout   R Box   O Ellipse   M Mosaic\n\nCtrl+C Copy image   Ctrl+V Paste image\nCtrl+Z Undo   Ctrl+Y Redo\nCtrl+0 Fit   Enter Apply crop\nDelete / Backspace Delete element   Esc Deselect\n\nScroll: zoom\nMiddle-drag: pan"), Words.T("단축키 안내", "Keyboard shortcuts"));
+            MessageBox.Show(this, HotkeyText(settings) + Words.T("  새 캡처\n\nV 선택   C 자르기   S 크기 조절\nN 번호   T 글자   X 텍스트 상자\nA 화살표   B 말풍선   R 사각형   O 원   M 가리기\n\nCtrl+C 이미지 복사   Ctrl+V 이미지 가져오기\nCtrl+Z 실행 취소   Ctrl+Y 다시 실행\nCtrl+0 화면 맞춤   Enter 자르기 적용\nF2 / Enter 내용 수정   Delete / Backspace 요소 삭제\nEsc 선택 해제\n\n마우스 휠: 확대·축소\n가운데 버튼 드래그: 화면 이동", "  New capture\n\nV Select   C Crop   S Resize\nN Number   T Text   X Text box\nA Arrow   B Callout   R Box   O Ellipse   M Mosaic\n\nCtrl+C Copy image   Ctrl+V Paste image\nCtrl+Z Undo   Ctrl+Y Redo\nCtrl+0 Fit   Enter Apply crop\nF2 / Enter Edit text   Delete / Backspace Delete element\nEsc Deselect\n\nScroll: zoom\nMiddle-drag: pan"), Words.T("단축키 안내", "Keyboard shortcuts"));
         }
         private void SavePreview(string path)
         { using (var bitmap = new Bitmap(Width, Height)) { DrawToBitmap(bitmap, new Rectangle(Point.Empty, Size)); Storage.SavePng(bitmap, path); } }

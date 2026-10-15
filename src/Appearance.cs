@@ -215,6 +215,7 @@ namespace ParkCapture
                     case "resize": g.DrawRectangle(p, 4, 4, 16, 16); g.DrawLine(p, 8, 16, 16, 8); g.DrawLines(p, new[] { new PointF(10, 8), new PointF(16, 8), new PointF(16, 14) }); break;
                     case "number": g.DrawEllipse(p, 3, 3, 18, 18); g.DrawLines(p, new[] { new PointF(10, 9), new PointF(12, 7), new PointF(12, 17) }); g.DrawLine(p, 9, 17, 15, 17); break;
                     case "text": g.DrawLine(p, 5, 5, 19, 5); g.DrawLine(p, 12, 5, 12, 20); g.DrawLine(p, 8, 20, 16, 20); g.DrawLine(p, 5, 5, 5, 8); g.DrawLine(p, 19, 5, 19, 8); break;
+                    case "textBox": g.DrawRectangle(p, 3, 3, 18, 18); g.DrawLine(p, 7, 7, 17, 7); g.DrawLine(p, 7, 12, 17, 12); g.DrawLine(p, 7, 17, 13, 17); break;
                     case "bubble": using (var path = Round(new RectangleF(3, 4, 18, 13), 3)) g.DrawPath(p, path); g.DrawLines(p, new[] { new PointF(8, 17), new PointF(6, 22), new PointF(13, 17) }); break;
                     case "arrow": g.DrawLine(p, 4, 20, 20, 4); g.DrawLines(p, new[] { new PointF(10, 4), new PointF(20, 4), new PointF(20, 14) }); break;
                     case "rectangle": using (var path = Round(new RectangleF(3, 5, 18, 14), 2)) g.DrawPath(p, path); break;

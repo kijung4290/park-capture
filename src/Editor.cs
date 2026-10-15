@@ -15,7 +15,7 @@ namespace ParkCapture
         private Bitmap composite;
         private float zoom = 1;
         private PointF origin;
-        private bool fit = true, dragging, pan, resize, markDragChanged;
+        private bool fit = true, dragging, pan, markDragChanged;
         private readonly ContextMenuStrip annotationMenu = new ContextMenuStrip();
         private Point mouseAnchor;
         private PointF start;
@@ -35,6 +35,8 @@ namespace ParkCapture
             var delete = new ToolStripMenuItem(Words.T("요소 삭제", "Delete element"), null, delegate { DeleteSelected(); });
             delete.ShortcutKeyDisplayString = "Delete"; annotationMenu.Items.Add(delete);
             annotationMenu.Items.Add(Words.T("선택 해제", "Deselect"), null, delegate { ClearMarkSelection(); });
+            var edit = annotationMenu.Items.Add(Words.T("내용 수정…", "Edit text…"), null, delegate { EditSelectedText(); });
+            annotationMenu.Opening += delegate { edit.Visible = SelectedMark != null && SelectedMark.HasText && SelectedMark.Kind != Tool.Number; };
         }
         internal void SetDocument(Document doc)
         {
@@ -68,8 +70,9 @@ namespace ParkCapture
         internal void SetTool(Tool value) { CancelFrameResize(); Tool = value; selection = Rectangle.Empty; draft = null; selected = -1; Cursor = Tool == Tool.Select || Tool == Tool.Resize ? Cursors.Default : Cursors.Cross; Invalidate(); }
         internal void ApplyStyle()
         {
-            if (Document == null || selected < 0) return;
-            Document.Checkpoint(); var m = Document.Marks[selected]; m.Argb = MarkColor.ToArgb(); m.Width = LineWidth; m.FontSize = TextSize; Notify();
+            var m = SelectedMark; if (m == null) return;
+            if (m.Argb == MarkColor.ToArgb() && m.Width == LineWidth && m.FontSize == TextSize && m.FontName == TextFontName && m.Bold == TextBold && m.BoxBorder == TextBoxBorder && m.BoxFill == TextBoxFill) return;
+            Document.Checkpoint(); m.Argb = MarkColor.ToArgb(); m.Width = LineWidth; m.FontSize = TextSize; m.FontName = TextFontName; m.Bold = TextBold; m.BoxBorder = TextBoxBorder; m.BoxFill = TextBoxFill; Notify();
         }
         internal void Undo() { CancelFrameResize(); if (Document != null && Document.Undo()) { selected = -1; selection = Rectangle.Empty; Notify(); Fit(); } }
         internal void Redo() { CancelFrameResize(); if (Document != null && Document.Redo()) { selected = -1; selection = Rectangle.Empty; Notify(); Fit(); } }
@@ -80,7 +83,7 @@ namespace ParkCapture
         private void SelectMark(int index)
         {
             selected = index;
-            if (SelectedMark != null) { var mark = SelectedMark; MarkColor = Color.FromArgb(mark.Argb); LineWidth = mark.Width; TextSize = mark.FontSize; }
+            if (SelectedMark != null) { var mark = SelectedMark; MarkColor = Color.FromArgb(mark.Argb); LineWidth = mark.Width; TextSize = mark.FontSize; TextFontName = mark.FontName; TextBold = mark.Bold; TextBoxBorder = mark.BoxBorder; TextBoxFill = mark.BoxFill; }
             Invalidate(); ViewUpdate();
         }
         private int HitMark(PointF point)
@@ -122,47 +125,33 @@ namespace ParkCapture
                 if (SelectedMark != null) annotationMenu.Show(this, e.Location);
                 return;
             }
+            if (e.Button == MouseButtons.Left && BeginMarkInteraction(e.Location)) return;
             if (e.Button == MouseButtons.Left && BeginFrameResize(e.Location)) return;
             if (Tool == Tool.Resize) return;
             if (e.Button != MouseButtons.Left || !InImage(e.Location)) return;
             start = ToImage(e.Location); mouseAnchor = e.Location;
             if (Tool == Tool.Select)
             {
-                resize = false;
-                if (SelectedMark != null && SelectedMark.Kind != Tool.Text && SelectedMark.Kind != Tool.Number)
-                {
-                    var r = Document.Marks[selected].Bounds;
-                    resize = Math.Abs(start.X - r.Right) < 10 / zoom && Math.Abs(start.Y - r.Bottom) < 10 / zoom;
-                }
-                if (!resize)
-                {
-                    SelectMark(HitMark(start));
-                }
-                if (selected >= 0)
-                {
-                    original = Document.Marks[selected].Clone(); MarkColor = Color.FromArgb(original.Argb); LineWidth = original.Width; TextSize = original.FontSize;
-                    markDragChanged = false; dragging = true; Capture = true;
-                }
-                Invalidate(); ViewUpdate(); return;
+                SelectMark(-1); return;
             }
             selected = -1;
             if (Tool == Tool.Number || Tool == Tool.Text)
             {
-                string text = Tool == Tool.Text ? TextDialog.Ask(FindForm(), Words.T("입력할 글자", "Annotation text"), "") : "";
+                string text = Tool == Tool.Text ? TextDialog.Ask(FindForm(), Words.T("입력할 글자", "Annotation text"), "", TextFontName, TextSize, TextBold) : "";
                 if (Tool == Tool.Text && string.IsNullOrWhiteSpace(text)) return;
                 var mark = NewMark(start); mark.Text = text;
                 if (Tool == Tool.Number) { int max = 0; foreach (var m in Document.Marks) if (m.Kind == Tool.Number) max = Math.Max(max, m.Number); mark.Number = max + 1; }
-                Document.Checkpoint(); Document.Marks.Add(mark); Notify(); return;
+                Document.Checkpoint(); Document.Marks.Add(mark); SelectMark(Document.Marks.Count - 1); Notify(); return;
             }
             dragging = true; Capture = true; selection = Rectangle.Empty; draft = NewMark(start); Invalidate();
         }
-        private Mark NewMark(PointF p) { return new Mark { Kind = Tool, X1 = p.X, Y1 = p.Y, X2 = p.X, Y2 = p.Y, Argb = MarkColor.ToArgb(), Width = LineWidth, FontSize = TextSize }; }
+        private Mark NewMark(PointF p) { return new Mark { Kind = Tool, X1 = p.X, Y1 = p.Y, X2 = p.X, Y2 = p.Y, Argb = MarkColor.ToArgb(), Width = LineWidth, FontSize = TextSize, FontName = TextFontName, Bold = TextBold, BoxBorder = TextBoxBorder, BoxFill = TextBoxFill }; }
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e); if (Document == null) return;
             if (frameDragging) { MoveFrameResize(e.Location); return; }
             if (pan) { origin.X += e.X - mouseAnchor.X; origin.Y += e.Y - mouseAnchor.Y; mouseAnchor = e.Location; fit = false; Invalidate(); return; }
-            if (!dragging) { UpdateFrameCursor(e.Location); return; }
+            if (!dragging) { if (!UpdateAnnotationCursor(e.Location)) UpdateFrameCursor(e.Location); return; }
             var p = ToImage(e.Location);
             if (Tool == Tool.Select && selected >= 0)
             {
@@ -173,7 +162,7 @@ namespace ParkCapture
                 }
                 var m = Document.Marks[selected]; float dx = p.X - start.X, dy = p.Y - start.Y;
                 m.X1 = original.X1; m.Y1 = original.Y1; m.X2 = original.X2; m.Y2 = original.Y2;
-                if (resize && m.Kind != Tool.Text && m.Kind != Tool.Number) { m.X2 += dx; m.Y2 += dy; }
+                if (markHandle != FrameHandle.None) MarkGeometry.Resize(m, original, markHandle, new PointF(dx, dy), (ModifierKeys & Keys.Shift) != 0);
                 else { m.X1 += dx; m.X2 += dx; m.Y1 += dy; m.Y2 += dy; }
                 RefreshComposite(); return;
             }
@@ -193,7 +182,7 @@ namespace ParkCapture
             base.OnMouseUp(e); if (pan) { pan = false; Capture = false; return; }
             if (frameDragging) { FinishFrameResize(); return; }
             if (!dragging) return; dragging = false; Capture = false;
-            if (Tool == Tool.Select) { if (markDragChanged) Notify(); else ViewUpdate(); return; }
+            if (Tool == Tool.Select) { original = null; if (markDragChanged) Notify(); else ViewUpdate(); return; }
             if (draft == null) return;
             var r = Rectangle.Ceiling(draft.Bounds);
             if ((Tool == Tool.Crop || Tool == Tool.CutHorizontal || Tool == Tool.CutVertical) && r.Width > 0 && r.Height > 0)
@@ -204,21 +193,18 @@ namespace ParkCapture
                 draft = null; Invalidate(); ViewUpdate(); return;
             }
             if (r.Width < 2 && r.Height < 2) { draft = null; Invalidate(); return; }
-            if (Tool == Tool.Bubble)
+            if (Tool == Tool.Bubble || Tool == Tool.TextBox)
             {
-                string text = TextDialog.Ask(FindForm(), Words.T("말풍선 내용", "Callout text"), "");
+                if (Tool == Tool.TextBox && Math.Abs(draft.X2 - draft.X1) < 8 && Math.Abs(draft.Y2 - draft.Y1) < 8) { draft.X2 = Math.Min(Document.Image.Width, draft.X1 + 280); draft.Y2 = Math.Min(Document.Image.Height, draft.Y1 + 110); }
+                string text = TextDialog.Ask(FindForm(), Tool == Tool.Bubble ? Words.T("말풍선 내용", "Callout text") : Words.T("텍스트 상자", "Text box"), "", TextFontName, TextSize, TextBold);
                 if (string.IsNullOrWhiteSpace(text)) { draft = null; Invalidate(); return; } draft.Text = text;
             }
-            Document.Checkpoint(); Document.Marks.Add(draft); draft = null; Notify();
+            Document.Checkpoint(); Document.Marks.Add(draft); draft = null; SelectMark(Document.Marks.Count - 1); Notify();
         }
         protected override void OnMouseDoubleClick(MouseEventArgs e)
         {
             base.OnMouseDoubleClick(e);
-            if (Tool != Tool.Select || Document == null || selected < 0) return;
-            var m = Document.Marks[selected];
-            if (m.Kind != Tool.Text && m.Kind != Tool.Bubble) return;
-            string text = TextDialog.Ask(FindForm(), Words.T("글자 수정", "Edit text"), m.Text);
-            if (text == null) return; Document.Checkpoint(); m.Text = text; Notify();
+            if (e.Button == MouseButtons.Left) EditSelectedText();
         }
         internal bool ApplySelection()
         {
@@ -274,10 +260,10 @@ namespace ParkCapture
             if (selected >= 0 && selected < Document.Marks.Count)
             {
                 var r = Document.Marks[selected].Bounds; using (var p = new Pen(Style.Blue, 1.5f / zoom) { DashStyle = DashStyle.Dash }) g.DrawRectangle(p, r.X, r.Y, r.Width, r.Height);
-                if (SelectedMark.Kind != Tool.Text && SelectedMark.Kind != Tool.Number)
+                foreach (PointF point in FramePoints(r))
                 {
-                    g.FillRectangle(Brushes.White, r.Right - 4 / zoom, r.Bottom - 4 / zoom, 8 / zoom, 8 / zoom);
-                    using (var p = new Pen(Style.Blue, 1 / zoom)) g.DrawRectangle(p, r.Right - 4 / zoom, r.Bottom - 4 / zoom, 8 / zoom, 8 / zoom);
+                    g.FillRectangle(Brushes.White, point.X - 4 / zoom, point.Y - 4 / zoom, 8 / zoom, 8 / zoom);
+                    using (var p = new Pen(Style.Blue, 1 / zoom)) g.DrawRectangle(p, point.X - 4 / zoom, point.Y - 4 / zoom, 8 / zoom, 8 / zoom);
                 }
             }
             g.Restore(state);
@@ -290,14 +276,16 @@ namespace ParkCapture
 
     internal static class TextDialog
     {
-        internal static string Ask(IWin32Window owner, string title, string initial)
+        internal static string Ask(IWin32Window owner, string title, string initial, string fontName = "Malgun Gothic", float fontSize = 24, bool bold = true)
         {
-            using (var form = new Form { Text = title, StartPosition = FormStartPosition.CenterParent, ClientSize = new Size(410, 170), FormBorderStyle = FormBorderStyle.FixedDialog, MinimizeBox = false, MaximizeBox = false, Font = Style.Font(10), BackColor = Style.Sidebar })
+            using (var form = new Form { Text = title, StartPosition = FormStartPosition.CenterParent, ClientSize = new Size(520, 300), FormBorderStyle = FormBorderStyle.FixedDialog, MinimizeBox = false, MaximizeBox = false, Font = Style.Font(10), BackColor = Style.Sidebar })
             {
-                var input = new TextBox { Multiline = true, Text = initial, Location = new Point(16, 16), Size = new Size(378, 91), AcceptsReturn = true, ScrollBars = ScrollBars.Vertical, BorderStyle = BorderStyle.FixedSingle };
-                var ok = Style.Button(Words.T("확인", "OK"), delegate { form.DialogResult = DialogResult.OK; }, true); ok.Location = new Point(226, 120);
-                var cancel = Style.Button(Words.T("취소", "Cancel"), delegate { form.DialogResult = DialogResult.Cancel; }); cancel.Location = new Point(310, 120);
-                form.Controls.AddRange(new Control[] { input, ok, cancel }); form.CancelButton = cancel; form.Shown += delegate { input.Focus(); input.SelectAll(); };
+                var input = new TextBox { Multiline = true, Text = initial, Location = new Point(18, 18), Size = new Size(484, 204), AcceptsReturn = true, ScrollBars = ScrollBars.Vertical, BorderStyle = BorderStyle.FixedSingle, Font = AnnotationFonts.Create(fontName, Math.Min(26, fontSize), bold), AccessibleName = "주석 내용 / Annotation text" };
+                var hint = new Label { Text = Words.T("여러 줄 입력 · Ctrl+Enter 저장 · Esc 취소", "Multiple lines · Ctrl+Enter saves · Esc cancels"), ForeColor = Style.Muted, Font = Style.Font(8.5f), Bounds = new Rectangle(18, 230, 484, 20) };
+                var ok = Style.Button(Words.T("저장", "Save"), delegate { form.DialogResult = DialogResult.OK; }, true); ok.Location = new Point(326, 254);
+                var cancel = Style.Button(Words.T("취소", "Cancel"), delegate { form.DialogResult = DialogResult.Cancel; }); cancel.Location = new Point(418, 254);
+                input.KeyDown += delegate(object sender, KeyEventArgs e) { if (e.Control && e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; form.DialogResult = DialogResult.OK; } };
+                form.Controls.AddRange(new Control[] { input, hint, ok, cancel }); form.CancelButton = cancel; form.Shown += delegate { input.Focus(); input.SelectAll(); };
                 return form.ShowDialog(owner) == DialogResult.OK ? input.Text : null;
             }
         }
