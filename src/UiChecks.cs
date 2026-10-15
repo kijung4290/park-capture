@@ -150,6 +150,8 @@ namespace ParkCapture
                     results.Add("PASS Actual gdigrab recording, pause/resume segments, finish and MP4 resolution");
                 }
                 else results.Add("SKIP Recording controller: FFmpeg not installed");
+                TestLibrarySelection(form, editor, library);
+                results.Add("PASS Library click opens, drag/Ctrl/Shift/Ctrl+A select several, Delete recycles the selection, double-click full-screen preview");
                 form.Activate(); editor.Fit(); form.Refresh();
                 results.Add("RESULT: PASS");
             }

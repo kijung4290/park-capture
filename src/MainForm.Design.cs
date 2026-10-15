@@ -157,9 +157,15 @@ namespace ParkCapture
             search.TextChanged += delegate { if (!loading) LoadLibrary(doc == null ? selectedVideo : doc.PathName); };
             tips.SetToolTip(search, Words.T("파일명이나 날짜를 입력하세요. 예: 2026, 10.15", "Search filename or date, e.g. 2026, 10.15")); searchSurface.Controls.Add(search); sidebar.Controls.Add(searchSurface, 0, 4);
             thumbnails = new ImageList { ImageSize = new Size(206, 114), ColorDepth = ColorDepth.Depth32Bit };
-            library = new CaptureList { Dock = DockStyle.Fill, LargeImageList = thumbnails, MultiSelect = false, HideSelection = false, Margin = Padding.Empty, AccessibleName = Words.T("캡처 보관함", "Capture library") };
-            library.SelectedIndexChanged += delegate { if (loading || library.SelectedItems.Count == 0) return; OpenFile((string)library.SelectedItems[0].Tag); };
-            library.DoubleClick += delegate { if (selectedVideo != null) EditVideo(); };
+            library = new CaptureList { Dock = DockStyle.Fill, LargeImageList = thumbnails, MultiSelect = true, HideSelection = false, Margin = Padding.Empty, AccessibleName = Words.T("캡처 보관함", "Capture library") };
+            library.SelectedIndexChanged += delegate
+            {
+                if (loading || library.SelectedItems.Count == 0) return;
+                var item = library.FocusedItem != null && library.FocusedItem.Selected ? library.FocusedItem : library.SelectedItems[0];
+                OpenFile((string)item.Tag);
+                if (library.SelectedItems.Count > 1) SetStatus(Words.T(library.SelectedItems.Count + "개 선택됨 · Delete: 휴지통으로 이동 · 더블클릭: 크게 보기", library.SelectedItems.Count + " selected · Delete: Recycle Bin · Double-click: preview"));
+            };
+            library.DoubleClick += delegate { if (selectedVideo != null) EditVideo(); else ShowPreview(); };
             var context = new ContextMenuStrip();
             context.Items.Add(Words.T("이미지 복사", "Copy image"), null, delegate { CopyImage(); });
             context.Items.Add(Words.T("이미지 저장…", "Save image…"), null, delegate { if (selectedVideo != null) EditVideo(); else ExportImage(); });

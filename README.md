@@ -127,6 +127,10 @@ FFmpeg가 없더라도 이미지 캡처·편집은 작동합니다. FFmpeg는 �
 
 보관함은 오늘·어제·최근 7일·이전으로 묶으며 최근 500개까지 표시합니다. **전체 / 이미지 / 영상** 버튼으로 필터링하고, **캡처 검색**에서 파일명이나 날짜(예: `2026`, `10.15`)로 찾을 수 있습니다. 저장하면 미리보기에도 편집 결과가 반영됩니다. 이전 파일은 저장 폴더에서 열 수 있습니다. 목록 우클릭에서 복사·저장·파일 위치·휴지통 이동을 사용할 수 있습니다.
 
+- **크게 보기**: 보관함 항목을 **더블클릭**(또는 선택 후 **Space / Enter**)하면 화면 가득 크게 보여 줍니다. 편집한 주석도 함께 표시되며 **← →**·마우스 휠로 이전·다음 캡처로 넘기고 **Esc**·바깥 클릭·✕로 닫습니다.
+- **여러 개 선택**: 항목 위에서 **위아래로 드래그**하면 범위가 선택됩니다. **Ctrl+클릭**으로 하나씩 추가·해제, **Shift+클릭**으로 범위 선택, **Ctrl+A**로 전체 선택합니다.
+- **한꺼번에 삭제**: 선택한 뒤 **Delete**를 누르면 확인 후 선택한 캡처와 편집 내용을 모두 휴지통으로 옮깁니다. 열려 있던 캡처를 지우면 바로 다음 캡처가 열립니다.
+
 ## 자동 업데이트
 
 - 앱 시작 약 3초 뒤와 이후 **6시간마다** 공개 GitHub Releases의 정식 최신 버전을 확인합니다. 개발 중 소스나 미리보기 릴리스는 배포하지 않습니다.
@@ -186,7 +190,7 @@ CI에서는 대화형 디스플레이가 필요한 실제 화면 캡처 검증�
 | `src\Document.cs` | 주석 모델·픽셀 렌더링·실행 취소·저장·내보내기 |
 | `src\ImageResize.cs`, `src\Editor.Resize.cs` | 이미지 리샘플링·프레임 드래그·비율·실행 취소 |
 | `src\Editor.cs`, `src\Editor.Selection.cs`, `src\MarkGeometry.cs` | 캔버스 조작·직접 선택·내용 수정·요소 크기 조절 |
-| `src\MainForm.cs` | 보관함·메뉴·단축키·설정 창 |
+| `src\MainForm.cs`, `src\PreviewWindow.cs` | 보관함·여러 개 삭제·크게 보기·메뉴·단축키·설정 창 |
 | `src\MainForm.Design.cs` | 화면 배치·도구별 옵션·검색·시작 화면 |
 | `src\MainForm.Annotations.cs`, `src\AnnotationFonts.cs` | 요소 속성 편집과 내장·설치 글꼴 선택 |
 | `src\MainForm.ImageSize.cs` | 크기 입력·비율 유지·블로그·이메일 하단 영역 |
@@ -199,7 +203,7 @@ CI에서는 대화형 디스플레이가 필요한 실제 화면 캡처 검증�
 | `src\UpdatePackage.cs`, `src\UpdateInstaller.cs`, `updater\Program.cs` | 서명·해시·ZIP 검증, 교체와 실패 복구 |
 | `sign-release.ps1`, `publish-release.ps1`, `.github/workflows/release.yml` | 업데이트 서명·릴리스 자동 배포 |
 | `src\SelfTests.cs`, `src\UpdateTests.cs`, `src\AnnotationTests.cs` | 핵심·버튼·업데이트·글꼴·편집 데이터 검증 22개 |
-| `src\UiChecks.cs`, `src\UiChecks.Annotations.cs` | 실제 편집·글꼴·크기·내용 수정·선택·캡처·녹화 통합 검증 17개 |
+| `src\UiChecks.cs`, `src\UiChecks.Annotations.cs`, `src\UiChecks.Library.cs` | 실제 편집·글꼴·크기·내용 수정·선택·캡처·녹화·보관함 여러 개 선택·삭제·크게 보기 통합 검증 18개 |
 | `assets\parkjuim-logo.png`, `assets\parkcapture.ico`, `tools\make-icon.ps1` | 제공된 캐릭터 이미지를 참고해 만든 로고와, 파란 타일·캡처 모서리로 구성한 실행 파일 아이콘(생성 스크립트) |
 
 `--preview`는 임시 데모 폴더와 데모 이미지를 사용합니다. 검증 중 앱이 잠깐 화면에 표시되며, 앱 내부 이벤트를 통해 주석·크롭·캡처·짧은 화면 녹화까지 확인합니다. FFmpeg가 없으면 영상 관련 검증은 건너뜁니다. 배율이 혼합된 다중 모니터 등 미검증 항목은 위의 한계를 참고하세요.

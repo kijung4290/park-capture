@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace ParkCapture
@@ -162,6 +164,86 @@ namespace ParkCapture
             Columns.Add("Capture", 220); SmallImageList = rows; rows.Images.Add(new Bitmap(1, 163));
         }
         protected override void OnResize(EventArgs e) { base.OnResize(e); if (Columns.Count > 0) Columns[0].Width = Math.Max(50, ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 2); }
+
+        // Details view has no native marquee selection and the native control swallows mouse moves while
+        // the button is down, so clicks, Ctrl/Shift clicks and drag ranges are handled from raw messages.
+        internal bool DragSelecting { get; private set; }
+        private int anchor = -1, dragFrom = -1, batch;
+        private bool pointerDown, pendingChange;
+        private Point downPoint;
+        private HashSet<int> dragBase = new HashSet<int>();
+        protected override void OnSelectedIndexChanged(EventArgs e) { if (batch > 0 || DragSelecting) { pendingChange = true; return; } base.OnSelectedIndexChanged(e); }
+        private void FlushSelectionChange() { if (batch == 0 && !DragSelecting && pendingChange) { pendingChange = false; base.OnSelectedIndexChanged(EventArgs.Empty); } }
+        internal HashSet<int> SelectedSet() { return new HashSet<int>(SelectedIndices.Cast<int>()); }
+        internal void SetSelection(IEnumerable<int> indices, int focus)
+        {
+            var wanted = new HashSet<int>(indices); batch++;
+            try
+            {
+                for (int i = 0; i < Items.Count; i++) if (Items[i].Selected != wanted.Contains(i)) Items[i].Selected = wanted.Contains(i);
+                if (focus >= 0 && focus < Items.Count) { Items[focus].Focused = true; Items[focus].EnsureVisible(); }
+            }
+            finally { batch--; }
+            FlushSelectionChange();
+        }
+        internal void SelectAllItems() { SetSelection(Enumerable.Range(0, Items.Count), FocusedItem == null ? 0 : FocusedItem.Index); }
+        private static IEnumerable<int> Range(int a, int b) { return Enumerable.Range(Math.Min(a, b), Math.Abs(a - b) + 1); }
+        private int IndexAt(Point p) { var item = GetItemAt(Math.Max(1, Math.Min(ClientSize.Width - 2, p.X)), p.Y); return item == null ? -1 : item.Index; }
+        private int DragIndex(Point p)
+        {
+            if (Items.Count == 0) return -1;
+            if (p.Y < 0) { int top = TopItem == null ? 0 : Math.Max(0, TopItem.Index - 1); Items[top].EnsureVisible(); return top; }
+            if (p.Y >= ClientSize.Height) { int bottom = IndexAt(new Point(p.X, ClientSize.Height - 2)); bottom = bottom < 0 ? Items.Count - 1 : Math.Min(Items.Count - 1, bottom + 1); Items[bottom].EnsureVisible(); return bottom; }
+            int index = IndexAt(p);
+            if (index >= 0) return index;
+            // Group headers and the empty area below the last item keep the nearest item.
+            var last = Items[Items.Count - 1].Bounds; return p.Y > last.Bottom ? Items.Count - 1 : -1;
+        }
+        internal void PointerDown(Point p, bool ctrl, bool shift)
+        {
+            int index = IndexAt(p); var current = SelectedSet();
+            if (shift && anchor >= 0 && anchor < Items.Count && index >= 0)
+            { var set = new HashSet<int>(Range(anchor, index)); if (ctrl) set.UnionWith(current); SetSelection(set, index); }
+            else if (ctrl && index >= 0) { if (!current.Remove(index)) current.Add(index); SetSelection(current, index); anchor = index; }
+            else if (index >= 0) { SetSelection(new[] { index }, index); anchor = index; }
+            else if (!ctrl) SetSelection(new int[0], -1);
+            dragBase = ctrl ? SelectedSet() : new HashSet<int>(); dragFrom = index; downPoint = p; pointerDown = true; Capture = true;
+        }
+        internal void PointerMove(Point p)
+        {
+            if (!pointerDown) return;
+            if (!DragSelecting && Math.Abs(p.X - downPoint.X) < SystemInformation.DragSize.Width && Math.Abs(p.Y - downPoint.Y) < SystemInformation.DragSize.Height) return;
+            if (dragFrom < 0) { dragFrom = DragIndex(downPoint); if (dragFrom < 0) return; }
+            int to = DragIndex(p); if (to < 0) return;
+            DragSelecting = true; anchor = dragFrom;
+            var set = new HashSet<int>(dragBase); set.UnionWith(Range(dragFrom, to));
+            SetSelection(set, -1); Items[to].EnsureVisible();
+        }
+        internal void PointerUp()
+        {
+            if (!pointerDown) return;
+            pointerDown = false; Capture = false;
+            // The item the drag started from stays focused so the open capture does not jump around.
+            if (DragSelecting) { DragSelecting = false; if (dragFrom >= 0 && dragFrom < Items.Count) Items[dragFrom].Focused = true; FlushSelectionChange(); }
+        }
+        protected override void WndProc(ref Message m)
+        {
+            const int MouseMove = 0x0200, LeftDown = 0x0201, LeftUp = 0x0202, LeftDouble = 0x0203, CaptureChanged = 0x0215;
+            int lp = unchecked((int)m.LParam.ToInt64()), mk = unchecked((int)m.WParam.ToInt64());
+            var point = new Point((short)(lp & 0xFFFF), (short)((lp >> 16) & 0xFFFF));
+            switch (m.Msg)
+            {
+                case LeftDown: Focus(); PointerDown(point, (mk & 0x8) != 0, (mk & 0x4) != 0); return;
+                case MouseMove: if (pointerDown) { PointerMove(point); return; } break;
+                case LeftUp: if (pointerDown) { PointerUp(); return; } break;
+                case CaptureChanged: if (pointerDown) PointerUp(); break;
+                case LeftDouble:
+                    Focus(); int index = IndexAt(point);
+                    if (index >= 0) { SetSelection(new[] { index }, index); anchor = index; OnDoubleClick(EventArgs.Empty); }
+                    return;
+            }
+            base.WndProc(ref m);
+        }
         protected override void OnDrawColumnHeader(DrawListViewColumnHeaderEventArgs e) { e.DrawDefault = true; }
         protected override void OnDrawSubItem(DrawListViewSubItemEventArgs e) { }
         protected override void OnDrawItem(DrawListViewItemEventArgs e)

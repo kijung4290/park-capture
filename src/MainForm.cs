@@ -15,7 +15,7 @@ namespace ParkCapture
         private Settings settings;
         private Editor editor;
         private Document doc;
-        private ListView library;
+        private CaptureList library;
         private ImageList thumbnails;
         private Label status, title, count;
         private ComboBox filter;
@@ -246,18 +246,52 @@ namespace ParkCapture
             LoadLibrary(selectedVideo);
         }
         private void ShowFile() { string path = doc == null ? selectedVideo : doc.PathName; if (path != null) Process.Start("explorer.exe", "/select," + Quote(path)); }
+        // Replaceable by the in-process UI checks so they never touch the real Recycle Bin or block on a dialog.
+        internal static Action<string> RecycleFile = path => FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+        internal static Action<string> RecycleFolder = path => FileSystem.DeleteDirectory(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+        internal Func<string, bool> ConfirmDelete;
         private void RecycleSelected()
         {
-            string path = doc == null ? selectedVideo : doc.PathName; if (path == null) return;
-            if (MessageBox.Show(this, Words.T("선택한 파일과 편집 내용을 휴지통으로 옮길까요?", "Move the selected file and edits to the Recycle Bin?"), Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-            if (!SaveCurrent()) return;
-            try
+            string current = doc == null ? selectedVideo : doc.PathName;
+            var paths = library.SelectedItems.Cast<ListViewItem>().Select(i => (string)i.Tag).ToList();
+            if (paths.Count == 0 && current != null) paths.Add(current);
+            if (paths.Count == 0) return;
+            string question = paths.Count == 1 ? Words.T("선택한 파일과 편집 내용을 휴지통으로 옮길까요?", "Move the selected file and edits to the Recycle Bin?")
+                : Words.T("선택한 " + paths.Count + "개 파일과 편집 내용을 휴지통으로 옮길까요?", "Move the " + paths.Count + " selected files and their edits to the Recycle Bin?");
+            bool confirmed = ConfirmDelete != null ? ConfirmDelete(question) : MessageBox.Show(this, question, Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+            if (!confirmed || !SaveCurrent()) return;
+            int nextIndex = library.SelectedIndices.Count > 0 ? library.SelectedIndices.Cast<int>().Min() : 0;
+            bool closeCurrent = current != null && paths.Any(p => string.Equals(p, current, StringComparison.OrdinalIgnoreCase));
+            if (closeCurrent) { editor.SetDocument(null); if (doc != null) doc.Dispose(); doc = null; selectedVideo = null; title.Text = ""; }
+            int removed = 0; Exception failure = null;
+            foreach (string path in paths)
             {
-                FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
-                string folder = Storage.ProjectDir(path); if (Directory.Exists(folder)) FileSystem.DeleteDirectory(folder, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
-                editor.SetDocument(null); if (doc != null) doc.Dispose(); doc = null; selectedVideo = null; title.Text = ""; LoadLibrary(null); UpdateStatus();
+                try
+                {
+                    RecycleFile(path); removed++;
+                    string folder = Storage.ProjectDir(path); if (Directory.Exists(folder)) RecycleFolder(folder);
+                }
+                catch (Exception e) { if (failure == null) failure = e; }
             }
-            catch (Exception e) { Program.Report(e); }
+            LoadLibrary(closeCurrent ? null : current);
+            // Continue with the capture that took the deleted one's place.
+            if (closeCurrent && library.Items.Count > 0) library.SetSelection(new[] { Math.Min(nextIndex, library.Items.Count - 1) }, Math.Min(nextIndex, library.Items.Count - 1));
+            UpdateStatus();
+            SetStatus(Words.T(removed + "개를 휴지통으로 옮겼습니다.", "Moved " + removed + " to the Recycle Bin."));
+            if (failure != null) Program.Report(failure);
+        }
+        private void ShowPreview()
+        {
+            if (!SaveCurrent()) return;
+            var images = library.Items.Cast<ListViewItem>().Select(i => (string)i.Tag).Where(IsImage).ToList();
+            if (images.Count == 0) return;
+            string current = library.FocusedItem != null && library.FocusedItem.Selected ? (string)library.FocusedItem.Tag : doc == null ? null : doc.PathName;
+            int index = Math.Max(0, images.FindIndex(p => string.Equals(p, current, StringComparison.OrdinalIgnoreCase)));
+            string shown;
+            using (var preview = new PreviewWindow(images, index)) { preview.ShowDialog(this); shown = preview.CurrentPath; }
+            // Leave the library on the capture that was last viewed.
+            var item = library.Items.Cast<ListViewItem>().FirstOrDefault(i => string.Equals((string)i.Tag, shown, StringComparison.OrdinalIgnoreCase));
+            if (item != null && !(item.Selected && library.SelectedItems.Count == 1)) library.SetSelection(new[] { item.Index }, item.Index);
         }
         private void ShowSettings()
         {
@@ -296,6 +330,12 @@ namespace ParkCapture
             if (keyData == (Keys.Control | Keys.Oemplus) || keyData == (Keys.Control | Keys.Add)) { editor.ZoomBy(1.2f); return true; }
             if (keyData == (Keys.Control | Keys.OemMinus) || keyData == (Keys.Control | Keys.Subtract)) { editor.ZoomBy(1 / 1.2f); return true; }
             if (key == Keys.Enter && editor.Tool == Tool.Resize && (imageWidthInput.Focused || imageHeightInput.Focused)) { ApplyEditorAction(); return true; }
+            if (library.Focused)
+            {
+                if (keyData == Keys.Delete) { RecycleSelected(); return true; }
+                if (keyData == (Keys.Control | Keys.A)) { library.SelectAllItems(); return true; }
+                if (keyData == Keys.Space || keyData == Keys.Enter) { if (selectedVideo != null) EditVideo(); else ShowPreview(); return true; }
+            }
             if (editor.Focused)
             {
                 if (key == Keys.Escape && editor.CancelFrameResize()) return true;
