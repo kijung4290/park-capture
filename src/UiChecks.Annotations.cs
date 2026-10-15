@@ -50,10 +50,10 @@ namespace ParkCapture
                         TextInput(form, delegate { Drag(editor, ImagePoint(editor, 150, 90), ImagePoint(editor, 480, 210)); }, "", "클릭해서 다시 수정할 수 있어요.\n여러 줄도 입력할 수 있습니다.", false);
                         Assert(doc.Marks.Count == 1 && editor.SelectedMark.Kind == Tool.TextBox, "Drawing did not add an editable text box");
                         var box = doc.Marks[0]; Assert(box.FontName == "Pretendard", "New text does not use bundled font");
-                        family.SelectedItem = family.Items.Cast<FontChoice>().First(c => c.Name == AnnotationFonts.Legacy);
+                        var other = family.Items.Cast<FontChoice>().First(c => c.Name != AnnotationFonts.Default); family.SelectedItem = other;
                         Field<CheckBox>(form, "boldInput").Checked = false; Field<NumericUpDown>(form, "fontInput").Value = 30;
                         Field<List<SoftButton>>(form, "swatches")[1].PerformClick();
-                        Assert(box.FontName == AnnotationFonts.Legacy && !box.Bold && box.FontSize == 30 && box.Argb == Style.Blue.ToArgb(), "Selected text font/weight/size/color controls failed");
+                        Assert(box.FontName == other.Name && !box.Bold && box.FontSize == 30 && box.Argb == Style.Blue.ToArgb(), "Selected text font/weight/size/color controls failed");
                         family.SelectedItem = family.Items.Cast<FontChoice>().First(c => c.Name == AnnotationFonts.Default);
                         Field<CheckBox>(form, "boxBorderInput").Checked = false; Field<CheckBox>(form, "boxFillInput").Checked = false;
                         Assert(!box.BoxBorder && !box.BoxFill, "Text box background toggles failed");

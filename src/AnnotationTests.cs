@@ -22,6 +22,16 @@ namespace ParkCapture
                     bool drawn = false; for (int y = 0; y < bitmap.Height; y += 2) for (int x = 0; x < bitmap.Width; x += 2) if (bitmap.GetPixel(x, y).R < 100) drawn = true;
                     Assert(drawn, "Font produced no pixels");
                 }
+                var choices = AnnotationFonts.Choices().ToList();
+                Assert(choices.Count == 4 && choices[0].Name == AnnotationFonts.Default, "Font picker must offer exactly the four free fonts");
+                foreach (var label in new[] { "프리텐다드", "나눔스퀘어", "강원특별자치도체", "배달의민족체" })
+                    Assert(choices.Any(c => c.Label.StartsWith(label)), "Missing free font choice: " + label);
+                foreach (var choice in choices.Skip(1)) foreach (bool bold in new[] { false, true })
+                using (var font = AnnotationFonts.Create(choice.Name, 28, bold))
+                    // Family names come back localised (NanumSquare -> 나눔스퀘어), so only check whether the bundled fallback was used.
+                    Assert((font.FontFamily.Name == AnnotationFonts.Default) != AnnotationFonts.IsInstalled(choice.Name) && font.Bold == bold, "Free font did not render or fall back: " + choice.Label);
+                using (var missing = AnnotationFonts.Create("No Such Font 123", 28, false))
+                    Assert(missing.FontFamily.Name == AnnotationFonts.Default, "Missing fonts must fall back to bundled Pretendard");
                 using (var input = new StringReader("<Mark><Kind>Text</Kind><Text>legacy</Text></Mark>"))
                 { var mark = (Mark)new XmlSerializer(typeof(Mark)).Deserialize(input); Assert(mark.FontName == AnnotationFonts.Legacy && mark.Bold, "Legacy text appearance changed"); }
             });
