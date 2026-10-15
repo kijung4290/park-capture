@@ -5,9 +5,11 @@ $releaseTag = "v$Version"
 $releaseRepo = 'kijung4290/park-capture'
 $releaseAssets = @((Join-Path $PSScriptRoot "dist\ParkCapture-$Version-portable.zip"), (Join-Path $PSScriptRoot 'dist\update.json'), (Join-Path $PSScriptRoot 'dist\update.json.sig'))
 foreach ($releaseAsset in $releaseAssets) { if (-not (Test-Path -LiteralPath $releaseAsset)) { throw "Missing release asset: $releaseAsset" } }
-$releaseDraft = gh release view $releaseTag --repo $releaseRepo --json isDraft --jq .isDraft 2>$null
-$releaseExists = $LASTEXITCODE -eq 0
-if ($releaseExists -and $releaseDraft -ne 'true') { throw 'This version is already published. Increase the app version.' }
+$releaseList = gh release list --repo $releaseRepo --limit 100 --json tagName,isDraft | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw 'Could not read repository releases.' }
+$releaseExisting = $releaseList | Where-Object { $_.tagName -eq $releaseTag }
+$releaseExists = $null -ne $releaseExisting
+if ($releaseExists -and -not $releaseExisting.isDraft) { throw 'This version is already published. Increase the app version.' }
 if (-not $releaseExists) {
     $releaseCommit = git rev-parse HEAD
     gh release create $releaseTag --repo $releaseRepo --target $releaseCommit --draft --title "Park Capture $releaseTag" --notes-file (Join-Path $PSScriptRoot 'RELEASE_NOTES.md')

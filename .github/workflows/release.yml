@@ -37,8 +37,10 @@ jobs:
           if ($env:GITHUB_REF -like 'refs/tags/*' -and $env:GITHUB_REF -ne "refs/tags/v$version") { throw 'Tag and app version differ' }
           $publish = 'false'
           if ($env:GITHUB_EVENT_NAME -ne 'pull_request') {
-            $existing = gh release view "v$version" --json isDraft --jq .isDraft 2>$null
-            if ($LASTEXITCODE -ne 0 -or $existing -eq 'true') { $publish = 'true' }
+            $releases = gh release list --limit 100 --json tagName,isDraft | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0) { throw 'Could not read repository releases' }
+            $existing = $releases | Where-Object { $_.tagName -eq "v$version" }
+            if (-not $existing -or $existing.isDraft) { $publish = 'true' }
           }
           "publish=$publish" >> $env:GITHUB_OUTPUT
           exit 0
