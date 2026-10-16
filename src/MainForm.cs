@@ -304,7 +304,19 @@ namespace ParkCapture
                 if (!Native.RegisterHotKey(Handle, 1, next.Modifiers | 0x4000, (uint)next.Hotkey))
                 { Native.RegisterHotKey(Handle, 1, settings.Modifiers | 0x4000, (uint)settings.Hotkey); MessageBox.Show(this, Words.T("해당 단축키를 사용할 수 없습니다. 다른 키를 선택해 주세요.", "That shortcut is unavailable. Choose another key."), Text); return; }
                 bool languageChange = settings.Language != next.Language;
-                settings = next; settings.Save();
+                try
+                {
+                    if (Program.Demo) next.Save();
+                    else StartupRegistration.Save(next);
+                }
+                catch (Exception e)
+                {
+                    Native.UnregisterHotKey(Handle, 1);
+                    Native.RegisterHotKey(Handle, 1, settings.Modifiers | 0x4000, (uint)settings.Hotkey);
+                    MessageBox.Show(this, Words.T("설정을 저장하지 못했습니다. 기존 설정을 유지합니다.\n\n", "Could not save settings. Previous settings are kept.\n\n") + e.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                settings = next;
                 editor.SetDocument(null); if (doc != null) doc.Dispose(); doc = null; selectedVideo = null;
                 LoadLibrary(null); UpdateStatus();
                 if (languageChange) MessageBox.Show(this, Words.T("언어 설정은 프로그램을 완전히 종료한 후 다시 실행하면 적용됩니다.", "Quit the app from its tray menu and reopen to apply the language."), Text);
@@ -395,7 +407,7 @@ namespace ParkCapture
         internal Settings Result;
         internal SettingsDialog(Settings current)
         {
-            Text = Words.T("설정", "Settings"); ClientSize = new Size(600, 450); Font = Style.Font(10); BackColor = Style.Sidebar; ForeColor = Style.Ink; StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
+            Text = Words.T("설정", "Settings"); ClientSize = new Size(600, 486); Font = Style.Font(10); BackColor = Style.Sidebar; ForeColor = Style.Ink; StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
             var folder = new TextBox { Text = current.Folder, Bounds = new Rectangle(22, 48, 452, 28), AccessibleName = "저장 폴더 / Save folder" };
             var browse = Style.Button(Words.T("찾기", "Browse"), delegate { using (var d = new FolderBrowserDialog { SelectedPath = folder.Text }) if (d.ShowDialog(this) == DialogResult.OK) folder.Text = d.SelectedPath; }); browse.Location = new Point(486, 44);
             var language = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(22, 118, 140, 30), AccessibleName = "언어 / Language" }; language.Items.AddRange(new object[] { "한국어", "English" }); language.SelectedIndex = current.Language == "en" ? 1 : 0;
@@ -411,6 +423,7 @@ namespace ParkCapture
             var ffBrowse = Style.Button(Words.T("찾기", "Browse"), delegate { using (var d = new OpenFileDialog { Filter = "FFmpeg|ffmpeg.exe" }) if (d.ShowDialog(this) == DialogResult.OK) ffmpeg.Text = d.FileName; }); ffBrowse.Location = new Point(486, 274);
             var note = new Label { Text = Words.T("비워 두면 tools 폴더와 PATH에서 자동으로 찾습니다. 언어는 재실행 시 적용됩니다.", "Blank: search tools folder and PATH. Language applies after restart."), Bounds = new Rectangle(22, 314, 555, 40), ForeColor = Color.DimGray, Font = Style.Font(9) };
             var automatic = new CheckBox { Text = Words.T("새 버전 자동 확인 (시작 시 · 이후 6시간마다)", "Check for updates automatically (startup and every 6 hours)"), Checked = current.AutoUpdate, Bounds = new Rectangle(22, 359, 555, 28) };
+            var startup = new CheckBox { Text = Words.T("Windows 시작 시 자동 실행 (로그인할 때)", "Start automatically when signing in to Windows"), Checked = current.StartWithWindows, Bounds = new Rectangle(22, 395, 555, 28), AccessibleName = "Windows 시작 시 자동 실행 / Start with Windows" };
             var save = Style.Button(Words.T("저장", "Save"), delegate
             {
                 try
@@ -420,13 +433,14 @@ namespace ParkCapture
                     string full = Path.GetFullPath(folder.Text.Trim()); Directory.CreateDirectory(full);
                     string probe = Path.Combine(full, ".write-test-" + Guid.NewGuid().ToString("N")); File.WriteAllText(probe, ""); File.Delete(probe);
                     if (!string.IsNullOrWhiteSpace(ffmpeg.Text) && (!File.Exists(ffmpeg.Text) || !Path.GetFileName(ffmpeg.Text).Equals("ffmpeg.exe", StringComparison.OrdinalIgnoreCase))) throw new ArgumentException("ffmpeg.exe " + Words.T("경로를 확인해 주세요.", "path is invalid."));
-                    Result = new Settings { Folder = full, Language = language.SelectedIndex == 1 ? "en" : "ko", Hotkey = (int)((ShortcutKeyChoice)key.SelectedItem).Key, Modifiers = (uint)((ctrl.Checked ? 2 : 0) | (shift.Checked ? 4 : 0) | (alt.Checked ? 1 : 0)), CloseToTray = tray.Checked, OpenAfterCapture = open.Checked, AutoUpdate = automatic.Checked, FFmpegPath = ffmpeg.Text.Trim() }; DialogResult = DialogResult.OK;
+                    Result = new Settings { Folder = full, Language = language.SelectedIndex == 1 ? "en" : "ko", Hotkey = (int)((ShortcutKeyChoice)key.SelectedItem).Key, Modifiers = (uint)((ctrl.Checked ? 2 : 0) | (shift.Checked ? 4 : 0) | (alt.Checked ? 1 : 0)), CloseToTray = tray.Checked, OpenAfterCapture = open.Checked, AutoUpdate = automatic.Checked, StartWithWindows = startup.Checked, FFmpegPath = ffmpeg.Text.Trim() }; DialogResult = DialogResult.OK;
                 }
                 catch (Exception e) { MessageBox.Show(this, e.Message, Text); }
-            }, true); save.Location = new Point(390, 403);
-            var cancel = Style.Button(Words.T("취소", "Cancel"), delegate { DialogResult = DialogResult.Cancel; }); cancel.Location = new Point(484, 403); CancelButton = cancel;
+            }, true); save.Location = new Point(390, 439);
+            var cancel = Style.Button(Words.T("취소", "Cancel"), delegate { DialogResult = DialogResult.Cancel; }); cancel.Location = new Point(484, 439); CancelButton = cancel;
             Controls.AddRange(new Control[] { Label(Words.T("저장 폴더", "Save folder"), 22, 18), folder, browse, Label(Words.T("언어", "Language"), 22, 88), Label(Words.T("캡처 전역 단축키", "Global capture shortcut"), 190, 88), language, ctrl, shift, alt, key, keyHint, tray, open, Label(Words.T("영상 기능용 FFmpeg (선택)", "FFmpeg for video (optional)"), 22, 248), ffmpeg, ffBrowse, note, save, cancel });
             Controls.Add(automatic);
+            Controls.Add(startup);
         }
         private static Label Label(string text, int x, int y) { return new Label { Text = text, Location = new Point(x, y), AutoSize = true, ForeColor = Style.Ink }; }
     }

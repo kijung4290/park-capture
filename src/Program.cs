@@ -68,6 +68,7 @@ namespace ParkCapture
         public bool CloseToTray = true;
         public bool OpenAfterCapture = true;
         public bool AutoUpdate = true;
+        public bool StartWithWindows = false;
         public string FFmpegPath = "";
         public static Settings Load()
         {
